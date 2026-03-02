@@ -1,0 +1,27 @@
+﻿docker-compose : 
+time="2026-03-01T12:04:07-07:00" 
+level=warning msg="F:\\claude-vs-proje
+cts\\fft-receipe-helper\\docker-compos
+e.yml: the attribute `version` is 
+obsolete, it will be ignored, please 
+remove it to avoid potential 
+confusion"
+At line:1 char:1
++ docker-compose up > docker_out.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : NotSpec 
+   ified: (time="2026-03-0...tial co  
+  nfusion":String) [], RemoteExcept   
+ ion
+    + FullyQualifiedErrorId : NativeC 
+   ommandError
+ 
+Attaching to receipt-helper-backend, receipt-helper-frontend
+Error response from daemon: ports are 
+not available: exposing port TCP 
+0.0.0.0:8000 -> 127.0.0.1:0: listen 
+tcp 0.0.0.0:8000: bind: An attempt 
+was made to access a socket in a way 
+forbidden by its access permissions.
