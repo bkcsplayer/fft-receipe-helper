@@ -21,7 +21,7 @@ export function HistoryView({ token }) {
         setError(null)
         try {
             // In development against React fast refresh, fallback to absolute URL if needed
-            const response = await fetch(`http://localhost:8080/api/history?month=${encodeURIComponent(monthStr)}`, {
+            const response = await fetch(`${API_BASE_URL}/api/history?month=${encodeURIComponent(monthStr)}`, {
                 headers: {
                     'Authorization': `Basic ${token}`
                 }
