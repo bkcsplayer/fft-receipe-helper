@@ -79,9 +79,9 @@ async def get_history(
         logger.info("Fetching history for month %s by user %s", month, username)
         data = get_month_data(month)
         
-        # Optionally filter by username if we only want users to see their own data
-        # For a family app, you might want them to see everyone's. Let's return all for now.
-        return data
+        # Filter by username so users only see their own data
+        filtered_data = [row for row in data if row.get("上传者") == username]
+        return filtered_data
         
     except Exception as e:
         logger.exception("Failed to fetch history")
