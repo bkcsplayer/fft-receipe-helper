@@ -65,6 +65,7 @@ async def health():
 @app.get("/api/history", response_model=List[Dict])
 async def get_history(
     month: str = None,
+    all_users: bool = False,
     username: str = Depends(verify_credentials)
 ):
     """
@@ -76,9 +77,12 @@ async def get_history(
             # Default to current YYYY/MM
             month = datetime.now().strftime("%Y/%m")
             
-        logger.info("Fetching history for month %s by user %s", month, username)
+        logger.info("Fetching history for month %s by user %s (all_users=%s)", month, username, all_users)
         data = get_month_data(month)
         
+        if all_users:
+            return data
+            
         # Filter by username so users only see their own data
         filtered_data = [row for row in data if row.get("上传者") == username]
         return filtered_data

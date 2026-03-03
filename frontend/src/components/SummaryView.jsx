@@ -25,7 +25,7 @@ export function SummaryView({ token }) {
         setLoading(true)
         setError(null)
         try {
-            const response = await fetch(`${API_BASE_URL}/api/history?month=${encodeURIComponent(monthStr)}`, {
+            const response = await fetch(`${API_BASE_URL}/api/history?month=${encodeURIComponent(monthStr)}&all_users=true`, {
                 headers: {
                     'Authorization': `Basic ${token}`
                 }
