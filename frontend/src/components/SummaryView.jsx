@@ -13,9 +13,8 @@ export function SummaryView({ token }) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
-    const today = new Date()
-    const defaultMonthStr = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}`
-    const [currentMonthStr, setCurrentMonthStr] = useState(defaultMonthStr)
+    const [currentMonthStr, setCurrentMonthStr] = useState('all')
+    const [dateMode, setDateMode] = useState('all') // 'all' or 'month'
 
     useEffect(() => {
         fetchHistory(currentMonthStr)
@@ -133,17 +132,36 @@ export function SummaryView({ token }) {
                         账单统计
                     </p>
                 </div>
-                <input
-                    type="month"
-                    value={currentMonthStr.replace('/', '-')}
-                    onChange={(e) => {
-                        if (e.target.value) {
-                            setCurrentMonthStr(e.target.value.replace('-', '/'))
-                        }
-                    }}
-                    className="bg-card border text-sm rounded-md px-2 py-1 focus:ring-1 focus:ring-primary outline-none text-foreground"
-                    style={{ colorScheme: 'dark' }}
-                />
+                <div className="flex bg-card border rounded-md overflow-hidden text-sm" style={{ colorScheme: 'dark' }}>
+                    <button
+                        onClick={() => { setDateMode('all'); setCurrentMonthStr('all'); }}
+                        className={`px-3 py-1 text-xs font-medium transition-colors ${dateMode === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                    >
+                        全部
+                    </button>
+                    <button
+                        onClick={() => {
+                            setDateMode('month');
+                            const today = new Date();
+                            setCurrentMonthStr(`${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}`);
+                        }}
+                        className={`px-3 py-1 text-xs font-medium border-l transition-colors ${dateMode === 'month' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                    >
+                        按月
+                    </button>
+                    {dateMode === 'month' && (
+                        <input
+                            type="month"
+                            value={currentMonthStr.replace('/', '-')}
+                            onChange={(e) => {
+                                if (e.target.value) {
+                                    setCurrentMonthStr(e.target.value.replace('-', '/'))
+                                }
+                            }}
+                            className="bg-transparent px-2 py-1 outline-none w-[120px] border-l"
+                        />
+                    )}
+                </div>
             </div>
 
             {data.length === 0 ? (

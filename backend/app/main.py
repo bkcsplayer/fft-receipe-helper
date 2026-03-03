@@ -69,13 +69,12 @@ async def get_history(
     username: str = Depends(verify_credentials)
 ):
     """
-    Fetch all receipt rows for a given month (YYYY/MM) from Google Sheets.
-    If no month provided, defaults to current month.
+    Fetch all receipt rows for a given month (YYYY/MM) or 'all' from Google Sheets.
+    If no month provided, defaults to 'all'.
     """
     try:
         if not month:
-            # Default to current YYYY/MM
-            month = datetime.now().strftime("%Y/%m")
+            month = "all"
             
         logger.info("Fetching history for month %s by user %s (all_users=%s)", month, username, all_users)
         data = get_month_data(month)

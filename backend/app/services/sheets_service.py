@@ -102,7 +102,7 @@ def append_receipt_rows(receipt: ReceiptData, drive_link: str, uploader: str) ->
 
 def get_month_data(month_str: str) -> List[Dict]:
     """
-    Read all rows from a specific month tab (e.g., 'YYYY/MM').
+    Read all rows from a specific month tab (e.g., 'YYYY/MM') or 'all'.
     Returns a list of dictionaries mapping headers to row values.
     """
     settings = get_settings()
@@ -113,28 +113,41 @@ def get_month_data(month_str: str) -> List[Dict]:
     meta = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     existing = [s["properties"]["title"] for s in meta.get("sheets", [])]
     
-    if month_str not in existing:
+    ranges_to_fetch = []
+    if month_str == "all":
+        # Fetch from all tabs that look like YYYY/MM
+        import re
+        ranges_to_fetch = [f"'{t}'!A:H" for t in existing if re.match(r"\d{4}/\d{2}", t)]
+    else:
+        if month_str not in existing:
+            return []
+        ranges_to_fetch = [f"'{month_str}'!A:H"]
+
+    if not ranges_to_fetch:
         return []
 
     # Get data
-    result = service.spreadsheets().values().get(
+    result = service.spreadsheets().values().batchGet(
         spreadsheetId=spreadsheet_id,
-        range=f"'{month_str}'!A:H"
+        ranges=ranges_to_fetch
     ).execute()
     
-    values = result.get('values', [])
-    if not values or len(values) < 2: # No data or only headers
-        return []
-        
-    # The first row is headers (index 0)
-    # HEADERS = ["日期", "上传者", "店名", "商品名称", "单价", "总价(小票级)", "税费(小票级)", "小票图片链接(Drive)"]
-    headers = values[0]
+    value_ranges = result.get('valueRanges', [])
     data = []
     
-    for row in values[1:]:
-        # Pad row with empty strings if it's shorter than headers
-        padded_row = row + [""] * (len(headers) - len(row))
-        item = {headers[i]: padded_row[i] for i in range(len(headers))}
-        data.append(item)
+    for vr in value_ranges:
+        values = vr.get('values', [])
+        if not values or len(values) < 2: # No data or only headers
+            continue
+            
+        # The first row is headers (index 0)
+        # HEADERS = ["日期", "上传者", "店名", "商品名称", "单价", "总价(小票级)", "税费(小票级)", "小票图片链接(Drive)"]
+        headers = values[0]
+        
+        for row in values[1:]:
+            # Pad row with empty strings if it's shorter than headers
+            padded_row = row + [""] * (len(headers) - len(row))
+            item = {headers[i]: padded_row[i] for i in range(len(headers))}
+            data.append(item)
         
     return data
