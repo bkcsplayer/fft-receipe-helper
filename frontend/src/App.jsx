@@ -66,6 +66,7 @@ function App() {
       setTimeout(() => {
         setResult({
           success: true,
+          isPending: true,
           message: "⚠️ 模拟模式：解析成功（未真实调用 API）",
           drive_link: "https://drive.google.com/",
           receipt_data: {
@@ -87,7 +88,7 @@ function App() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/process-receipt`, {
+      const response = await fetch(`${API_BASE_URL}/api/parse-receipt`, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${token}`
@@ -105,7 +106,7 @@ function App() {
       }
 
       const data = await response.json()
-      setResult(data)
+      setResult({ ...data, isPending: true })
     } catch (err) {
       console.error(err)
       setErrorStatus(err.message || '网络连接失败，请检查后端运行状态。')
@@ -116,6 +117,65 @@ function App() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSave = async () => {
+    if (!result || !result.receipt_data) return;
+    setLoading(true);
+    setErrorStatus(null);
+
+    if (mockMode) {
+      setTimeout(() => {
+        setResult({
+          ...result,
+          isPending: false,
+          message: "⚠️ 模拟模式：确认保存成功（未真实调用 API）"
+        })
+        setLoading(false)
+      }, 1000)
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/save-receipt`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          receipt_data: result.receipt_data,
+          drive_link: result.drive_link
+        }),
+      })
+
+      if (response.status === 401) {
+        handleLogout()
+        throw new Error('认证过期或失效，请重新登录。')
+      }
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`)
+      }
+
+      const data = await response.json()
+      setResult({ ...data, isPending: false })
+    } catch (err) {
+      console.error(err)
+      setErrorStatus(err.message || '保存失败。')
+      setResult({
+        ...result,
+        success: false,
+        message: err.message || '保存失败。',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setResult(null);
+    setErrorStatus(null);
   }
 
   const handleReset = () => {
@@ -187,14 +247,20 @@ function App() {
                 <div className="text-center space-y-2">
                   <h3 className="text-lg font-medium">AI 处理中，请稍候...</h3>
                   <p className="text-sm text-muted-foreground w-64 mx-auto">
-                    正在执行 OCR 识别、提取结构化数据、上传至 Google Drive 并追加入 Google Sheets。
+                    {result?.isPending ? "正在保存到 Google Sheets..." : "正在完成 OCR 识别、提取结构化数据、并上传至 Google Drive。"}
                   </p>
                 </div>
               </div>
             )}
 
             {result && !loading && (
-              <ResultDisplay response={result} onReset={handleReset} />
+              <ResultDisplay
+                response={result}
+                onReset={handleReset}
+                onConfirm={handleSave}
+                onCancel={handleCancel}
+                isPending={result?.isPending}
+              />
             )}
           </>
         )}

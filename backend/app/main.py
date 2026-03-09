@@ -8,7 +8,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.models import ProcessResponse
+from app.models import ProcessResponse, SaveReceiptRequest
 from app.services.llm_service import extract_receipt_data
 from app.services.drive_service import upload_receipt_image
 from app.services.sheets_service import append_receipt_rows, get_month_data
@@ -100,14 +100,14 @@ async def get_history(
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
 
 
-@app.post("/api/process-receipt", response_model=ProcessResponse)
-async def process_receipt(
+@app.post("/api/parse-receipt", response_model=ProcessResponse)
+async def parse_receipt(
     file: UploadFile = File(...),
     username: str = Depends(verify_credentials)
 ):
     """
     Accept a receipt image, run it through the LLM for OCR,
-    upload the original to Google Drive, and write item rows to Google Sheets.
+    upload the original to Google Drive.
     """
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are accepted.")
@@ -120,27 +120,49 @@ async def process_receipt(
     async with processing_lock:
         try:
             # Step 1: LLM OCR
-            logger.info("Processing receipt (%s, %d bytes) …", file.filename, len(image_bytes))
+            logger.info("Parsing receipt (%s, %d bytes) ...", file.filename, len(image_bytes))
             receipt_data = await extract_receipt_data(image_bytes, file.content_type)
             logger.info("Extracted: %s — %d items", receipt_data.store_name, len(receipt_data.items))
 
             # Step 2: Upload to Google Drive
             drive_link = upload_receipt_image(image_bytes, receipt_data.date)
 
-            # Step 3: Write rows to Google Sheets (including the uploader's username)
-            rows_written = append_receipt_rows(receipt_data, drive_link, username)
-            logger.info("Wrote %d rows to Sheets for user %s", rows_written, username)
-
             return ProcessResponse(
                 success=True,
                 receipt_data=receipt_data,
                 drive_link=drive_link,
-                message=f"成功处理 {len(receipt_data.items)} 件商品，已写入 Google Sheets。",
+                message=f"成功解析 {len(receipt_data.items)} 件商品，请确认后保存。",
             )
 
         except Exception as e:
-            logger.exception("Receipt processing failed")
+            logger.exception("Receipt parsing failed")
             return ProcessResponse(
                 success=False,
-                message=f"处理失败: {str(e)}",
+                message=f"解析失败: {str(e)}",
             )
+
+@app.post("/api/save-receipt", response_model=ProcessResponse)
+async def save_receipt(
+    request: SaveReceiptRequest,
+    username: str = Depends(verify_credentials)
+):
+    """
+    Save the confirmed receipt data to Google Sheets.
+    """
+    try:
+        # Step 3: Write rows to Google Sheets (including the uploader's username)
+        rows_written = append_receipt_rows(request.receipt_data, request.drive_link or "", username)
+        logger.info("Wrote %d rows to Sheets for user %s", rows_written, username)
+
+        return ProcessResponse(
+            success=True,
+            receipt_data=request.receipt_data,
+            drive_link=request.drive_link,
+            message=f"成功保存 {len(request.receipt_data.items)} 件商品至 Google Sheets。",
+        )
+    except Exception as e:
+        logger.exception("Receipt saving failed")
+        return ProcessResponse(
+            success=False,
+            message=f"保存失败: {str(e)}",
+        )

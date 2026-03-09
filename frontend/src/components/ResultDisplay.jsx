@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card'
 import { ExternalLink, CheckCircle2, AlertCircle, ShoppingBag, Receipt, Calendar, Store } from 'lucide-react';
 import { Button } from './ui/button';
 
-export function ResultDisplay({ response, onReset }) {
+export function ResultDisplay({ response, onReset, onConfirm, onCancel, isPending }) {
     if (!response) return null;
 
     const { success, receipt_data, drive_link, message } = response;
@@ -32,7 +32,7 @@ export function ResultDisplay({ response, onReset }) {
             <CardHeader className="bg-primary/5 pb-4 border-b">
                 <div className="flex items-center gap-2 text-primary">
                     <CheckCircle2 className="h-5 w-5" />
-                    <CardTitle>解析成功</CardTitle>
+                    <CardTitle>{isPending ? "请核对解析结果" : "保存成功"}</CardTitle>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">{message}</p>
             </CardHeader>
@@ -88,16 +88,29 @@ export function ResultDisplay({ response, onReset }) {
             </CardContent>
 
             <CardFooter className="flex flex-col sm:flex-row gap-3 bg-muted/20 border-t pt-6">
-                {drive_link && (
-                    <Button variant="outline" className="w-full sm:w-auto flex-1 gap-2" onClick={() => window.open(drive_link, '_blank')}>
-                        <Receipt className="h-4 w-4" />
-                        查看原图 (Drive)
-                        <ExternalLink className="h-3 w-3 ml-1" />
-                    </Button>
+                {isPending ? (
+                    <>
+                        <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto flex-1">
+                            重拍
+                        </Button>
+                        <Button onClick={onConfirm} className="w-full sm:w-auto flex-1">
+                            确认保存
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        {drive_link && (
+                            <Button variant="outline" className="w-full sm:w-auto flex-1 gap-2" onClick={() => window.open(drive_link, '_blank')}>
+                                <Receipt className="h-4 w-4" />
+                                查看原图 (Drive)
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                            </Button>
+                        )}
+                        <Button onClick={onReset} className="w-full sm:w-auto flex-1">
+                            继续拍摄
+                        </Button>
+                    </>
                 )}
-                <Button onClick={onReset} className="w-full sm:w-auto flex-1">
-                    继续拍摄
-                </Button>
             </CardFooter>
         </Card>
     );

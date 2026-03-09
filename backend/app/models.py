@@ -25,3 +25,8 @@ class ProcessResponse(BaseModel):
     receipt_data: Optional[ReceiptData] = None
     drive_link: Optional[str] = None
     message: str = ""
+
+class SaveReceiptRequest(BaseModel):
+    """Payload for saving a confirmed receipt."""
+    receipt_data: ReceiptData
+    drive_link: Optional[str] = None
