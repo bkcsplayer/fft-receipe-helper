@@ -24,16 +24,31 @@ function App() {
   useEffect(() => {
     // Check local storage for existing session
     const saved = localStorage.getItem('receipt_auth_token')
-    if (saved) setToken(saved)
+    const expiresAt = localStorage.getItem('receipt_auth_expires_at')
+
+    if (saved && expiresAt) {
+      if (new Date().getTime() < parseInt(expiresAt, 10)) {
+        setToken(saved)
+      } else {
+        // Token expired
+        handleLogout()
+      }
+    } else {
+      handleLogout()
+    }
   }, [])
 
   const handleLogin = (newToken) => {
+    // Set expiration to 24 hours from now
+    const expiresAt = new Date().getTime() + 24 * 60 * 60 * 1000;
     localStorage.setItem('receipt_auth_token', newToken)
+    localStorage.setItem('receipt_auth_expires_at', expiresAt.toString())
     setToken(newToken)
   }
 
   const handleLogout = () => {
     localStorage.removeItem('receipt_auth_token')
+    localStorage.removeItem('receipt_auth_expires_at')
     setToken(null)
     setResult(null)
   }

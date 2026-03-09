@@ -9,22 +9,36 @@ export function Login({ onLogin }) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
-        // Hardcoded logic per user request
-        setTimeout(() => {
-            if ((username === 'admin' || username === 'admin2') && password === '1q2w3e4R') {
-                // Create basic auth token
-                const token = btoa(`${username}:${password}`);
+        try {
+            const token = btoa(`${username}:${password}`);
+            // Ensure we use the correct API_BASE_URL. In this context since Login doesn't have it imported,
+            // we will fetch relative, or use the global window location if needed.
+            // But realistically we should import API_BASE_URL from App.jsx or define it here.
+            // We use the same env trick as in App.jsx
+            const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:8080';
+
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${token}`
+                }
+            });
+
+            if (response.ok) {
                 onLogin(token);
             } else {
                 setError('账号或密码错误');
             }
+        } catch (err) {
+            setError('网络连接失败，请检查后端运行状态。');
+        } finally {
             setLoading(false);
-        }, 600); // Simulate slight network delay for effect
+        }
     };
 
     return (

@@ -62,6 +62,15 @@ async def health():
     return {"status": "ok"}
 
 
+@app.post("/api/auth/verify")
+async def verify_auth(username: str = Depends(verify_credentials)):
+    """
+    Verify credentials provided via Basic Auth and return success.
+    The actual validation is handled by the Depends(verify_credentials) dependency.
+    """
+    return {"success": True, "username": username}
+
+
 @app.get("/api/history", response_model=List[Dict])
 async def get_history(
     month: str = None,
