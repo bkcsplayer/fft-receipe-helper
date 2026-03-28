@@ -195,11 +195,11 @@ export function SummaryView({ token }) {
                         <div className="bg-card border rounded-2xl p-5 shadow-sm">
                             <div className="flex items-center gap-2 text-muted-foreground mb-2">
                                 <Store className="h-4 w-4" />
-                                <span className="text-sm font-medium">商家数量</span>
+                                <span className="text-sm font-medium">消费笔数</span>
                             </div>
                             <div className="text-3xl font-bold font-mono text-foreground">
-                                {Object.keys(storeSpending).length}
-                                <span className="text-sm text-muted-foreground font-sans ml-1">家</span>
+                                {processedReceipts.size}
+                                <span className="text-sm text-muted-foreground font-sans ml-1">单</span>
                             </div>
                         </div>
                     </div>
