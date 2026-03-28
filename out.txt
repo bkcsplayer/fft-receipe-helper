@@ -1,0 +1,5 @@
+abab6.5s-chat ERR: {"type":"error","error":{"type":"bad_request_error","message":"invalid params, unknown model 'abab6.5s-chat' (2013)","http_code":"400"},"request_id":"
+MiniMax-VL-01 ERR: {"type":"error","error":{"type":"bad_request_error","message":"invalid params, unknown model 'MiniMax-VL-01' (2013)","http_code":"400"},"request_id":"
+MiniMax-M2.5 OK: {"id":"06165bd775d8c7a83cc4cb34b1b92ff5","choices"
+MiniMax-Text-01 OK: {"id":"06165be2d8f3640a4b7fbfae8d20b3f5","choices"
+abab6.5g-chat ERR: {"type":"error","error":{"type":"bad_request_error","message":"invalid params, unknown model 'abab6.5g-chat' (2013)","http_code":"400"},"request_id":"

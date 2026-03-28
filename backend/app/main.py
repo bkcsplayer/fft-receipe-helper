@@ -12,8 +12,10 @@ from app.models import ProcessResponse, SaveReceiptRequest
 from app.services.llm_service import extract_receipt_data
 from app.services.drive_service import upload_receipt_image
 from app.services.sheets_service import append_receipt_rows, get_month_data
+from app.services.telegram_service import send_telegram_photo
 from app.auth import verify_credentials
 from datetime import datetime
+import traceback
 from typing import List, Dict
 import io
 from PIL import Image
@@ -151,6 +153,12 @@ async def parse_receipt(
             # Step 2: Upload to Google Drive (using optimized JPEG directly)
             drive_link = upload_receipt_image(standardized_bytes, receipt_data.date)
 
+            # Fire Telegram notification asynchronously without blocking response
+            asyncio.create_task(send_telegram_photo(
+                image_bytes=standardized_bytes,
+                caption=f"✅ <b>小票解析成功</b>\n门店: {receipt_data.store_name}\n日期: {receipt_data.date}\n总计: <b>${receipt_data.total_price}</b>\n商品数: {len(receipt_data.items)} 件\n\n<a href='{drive_link}'>查看原图 (Google Drive)</a>"
+            ))
+
             return ProcessResponse(
                 success=True,
                 receipt_data=receipt_data,
@@ -160,6 +168,12 @@ async def parse_receipt(
 
         except Exception as e:
             logger.exception("Receipt parsing failed")
+            # Fallback to standardized bytes or original bytes if standardizing failed
+            target_bytes = standardized_bytes if 'standardized_bytes' in locals() else image_bytes
+            asyncio.create_task(send_telegram_photo(
+                image_bytes=target_bytes,
+                caption=f"❌ <b>解析及提取崩溃报警</b>\n上传账号: {username}\n\n<b>错误详情:</b>\n<pre>{str(e)}</pre>"
+            ))
             return ProcessResponse(
                 success=False,
                 message=f"解析失败: {str(e)}",

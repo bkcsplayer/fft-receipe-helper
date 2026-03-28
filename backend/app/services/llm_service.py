@@ -1,10 +1,9 @@
-"""LLM Service — calls MiniMax API for receipt OCR."""
+"""LLM Service — calls OpenRouter API with Claude 3.5 Sonnet for receipt OCR."""
 
 import base64
 import json
 import logging
 import httpx
-import re
 
 from app.config import get_settings
 from app.models import ReceiptData
@@ -35,7 +34,7 @@ Rules:
 
 
 async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jpeg") -> ReceiptData:
-    """Send standardized receipt image to MiniMax and return structured data."""
+    """Send standardized receipt image to OpenRouter and return structured data."""
     settings = get_settings()
 
     # image_bytes is already standardized as high-quality JPEG by main.py
@@ -43,7 +42,7 @@ async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jp
     media_type = content_type
 
     payload = {
-        "model": settings.MINIMAX_MODEL,
+        "model": settings.OPENROUTER_MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
@@ -67,13 +66,15 @@ async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jp
     }
 
     headers = {
-        "Authorization": f"Bearer {settings.MINIMAX_API_KEY}",
+        "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
+        "HTTP-Referer": "https://receipt-helper.app",
+        "X-Title": "Receipt Helper",
     }
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=90.0) as client:
         response = await client.post(
-            "https://api.minimax.io/v1/chat/completions",
+            "https://openrouter.ai/api/v1/chat/completions",
             json=payload,
             headers=headers,
         )
@@ -81,26 +82,12 @@ async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jp
 
     data = response.json()
     raw_content = data["choices"][0]["message"]["content"].strip()
-    logger.info("LLM raw response: %s", raw_content)
+    logger.info("LLM raw response via OpenRouter: %s", raw_content)
 
-    # 1. Strip <think>...</think> blocks (Minimax M2.5)
-    raw_content = re.sub(r'<think>.*?</think>', '', raw_content, flags=re.DOTALL).strip()
+    # Clean markdown fences if LLM wraps output
+    if raw_content.startswith("```"):
+        lines = raw_content.split("\n")
+        raw_content = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
 
-    # 2. Clean markdown fences if LLM wraps output
-    if "```json" in raw_content:
-        # Extract content between ```json and ```
-        match = re.search(r'```json\s*(.*?)\s*```', raw_content, re.DOTALL)
-        if match:
-            raw_content = match.group(1).strip()
-    elif "```" in raw_content:
-        match = re.search(r'```\s*(.*?)\s*```', raw_content, re.DOTALL)
-        if match:
-            raw_content = match.group(1).strip()
-
-    try:
-        parsed = json.loads(raw_content)
-    except json.JSONDecodeError as e:
-        logger.error("Failed to parse JSON string string: %s", raw_content)
-        raise e
-        
+    parsed = json.loads(raw_content)
     return ReceiptData(**parsed)
