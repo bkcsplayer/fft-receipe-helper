@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { API_BASE_URL } from '../App'
-import { Loader2, AlertCircle, PieChart as PieChartIcon, TrendingUp, DollarSign, Store, RefreshCcw } from 'lucide-react'
+import { Loader2, AlertCircle, PieChart as PieChartIcon, TrendingUp, DollarSign, Store, RefreshCcw, ScrollText, UserCircle2 } from 'lucide-react'
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend
@@ -74,6 +74,7 @@ export function SummaryView({ token }) {
     let totalSpending = 0
     const storeSpending = {}
     const dateSpending = {}
+    const detailedReceipts = []
 
     // Aggregate data by unique receipt (using drive link as ID)
     const processedReceipts = new Set()
@@ -96,6 +97,14 @@ export function SummaryView({ token }) {
             // Date aggregation
             const date = row["日期"] || "未知日期"
             dateSpending[date] = (dateSpending[date] || 0) + price
+            
+            detailedReceipts.push({
+                driveLink,
+                date,
+                store,
+                price,
+                uploader: row["上传者"] || "未知"
+            })
         }
     })
 
@@ -258,6 +267,39 @@ export function SummaryView({ token }) {
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: 'hsl(var(--foreground))' }} />
                                 </PieChart>
                             </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Detailed Receipts List */}
+                    <div className="bg-card border rounded-2xl p-5 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 font-medium">
+                                <ScrollText className="h-4 w-4 text-orange-500" />
+                                全账户对账明细流水
+                            </div>
+                            <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                                共 {detailedReceipts.length} 笔交易
+                            </div>
+                        </div>
+                        <div className="space-y-3 mt-4 max-h-[400px] overflow-y-auto pr-1">
+                            {detailedReceipts.sort((a,b)=>b.date.localeCompare(a.date)).map((r, idx) => (
+                                <div key={idx} className="flex flex-col gap-2 p-3 bg-muted/20 rounded-xl border hover:bg-muted/50 transition-colors">
+                                    <div className="flex justify-between items-start">
+                                        <div className="font-medium text-sm flex-1">{r.store}</div>
+                                        <div className="font-mono font-bold text-primary whitespace-nowrap ml-4">${r.price.toFixed(2)}</div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                        <div>{r.date}</div>
+                                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border shadow-sm ${r.uploader === 'admin' ? 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400'}`}>
+                                            <UserCircle2 className="h-3 w-3" />
+                                            <span className="font-medium">{r.uploader}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {detailedReceipts.length === 0 && (
+                                <div className="text-sm text-center text-muted-foreground py-8 border-2 border-dashed rounded-xl">此月份暂时没有明细流水</div>
+                            )}
                         </div>
                     </div>
                 </>
