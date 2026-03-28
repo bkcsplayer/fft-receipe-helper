@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { API_BASE_URL } from '../App'
-import { Loader2, AlertCircle, PieChart as PieChartIcon, TrendingUp, DollarSign, Store } from 'lucide-react'
+import { Loader2, AlertCircle, PieChart as PieChartIcon, TrendingUp, DollarSign, Store, RefreshCcw } from 'lucide-react'
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend
@@ -129,12 +129,21 @@ export function SummaryView({ token }) {
                 <div>
                     <h2 className="text-2xl font-semibold tracking-tight">数据汇总</h2>
                     <p className="text-sm text-muted-foreground mt-1">
-                        账单统计
+                        账单统计 (全部用户合并)
                     </p>
                 </div>
-                <div className="flex bg-card border rounded-md overflow-hidden text-sm" style={{ colorScheme: 'dark' }}>
+                <div className="flex items-center gap-2">
                     <button
-                        onClick={() => { setDateMode('all'); setCurrentMonthStr('all'); }}
+                        onClick={() => fetchHistory(currentMonthStr)}
+                        disabled={loading}
+                        className="p-1.5 border rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:opacity-50"
+                        title="刷新数据"
+                    >
+                        <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <div className="flex bg-card border rounded-md overflow-hidden text-sm" style={{ colorScheme: 'dark' }}>
+                        <button
+                            onClick={() => { setDateMode('all'); setCurrentMonthStr('all'); }}
                         className={`px-3 py-1 text-xs font-medium transition-colors ${dateMode === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
                     >
                         全部
@@ -161,6 +170,7 @@ export function SummaryView({ token }) {
                             className="bg-transparent px-2 py-1 outline-none w-[120px] border-l"
                         />
                     )}
+                </div>
                 </div>
             </div>
 

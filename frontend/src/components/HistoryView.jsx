@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { API_BASE_URL } from '../App' // Refactored API URL exported from App
-import { Loader2, AlertCircle, ReceiptText, ExternalLink, Calendar, MapPin, Receipt } from 'lucide-react'
+import { Loader2, AlertCircle, ReceiptText, ExternalLink, Calendar, MapPin, Receipt, RefreshCcw } from 'lucide-react'
 
 export function HistoryView({ token }) {
     const [data, setData] = useState([])
@@ -120,7 +120,16 @@ export function HistoryView({ token }) {
                     </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                    <div className="flex bg-card border rounded-md overflow-hidden text-sm" style={{ colorScheme: 'dark' }}>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => fetchHistory(currentMonthStr)}
+                            disabled={loading}
+                            className="p-1.5 border rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:opacity-50 bg-background"
+                            title="刷新数据"
+                        >
+                            <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
+                        <div className="flex bg-card border rounded-md overflow-hidden text-sm" style={{ colorScheme: 'dark' }}>
                         <button
                             onClick={() => { setDateMode('all'); setCurrentMonthStr('all'); setPage(1); }}
                             className={`px-3 py-1 text-xs font-medium transition-colors ${dateMode === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
@@ -151,6 +160,7 @@ export function HistoryView({ token }) {
                                 className="bg-transparent px-2 py-1 outline-none w-[120px] border-l"
                             />
                         )}
+                    </div>
                     </div>
                     <div className="bg-primary/10 text-primary px-3 py-0.5 rounded-full text-xs font-medium">
                         共 {totalReceipts} 单

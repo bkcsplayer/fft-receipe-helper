@@ -245,9 +245,11 @@ function App() {
                   </div>
                 </div>
                 <div className="text-center space-y-2">
-                  <h3 className="text-lg font-medium">AI 处理中，请稍候...</h3>
+                  <h3 className="text-lg font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-500 animate-pulse">
+                    🤖 AI 正在进行结构化分析与深度推理中...
+                  </h3>
                   <p className="text-sm text-muted-foreground w-64 mx-auto">
-                    {result?.isPending ? "正在保存到 Google Sheets..." : "正在完成 OCR 识别、提取结构化数据、并上传至 Google Drive。"}
+                    {result?.isPending ? "正在保存到 Google Sheets..." : "大模型正在运用思维链(CoT)层层解析票据细节，请稍候。"}
                   </p>
                 </div>
               </div>
