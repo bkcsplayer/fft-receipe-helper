@@ -4,6 +4,7 @@ import base64
 import json
 import logging
 import httpx
+import re
 
 from app.config import get_settings
 from app.models import ReceiptData
@@ -82,10 +83,24 @@ async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jp
     raw_content = data["choices"][0]["message"]["content"].strip()
     logger.info("LLM raw response: %s", raw_content)
 
-    # Clean markdown fences if LLM wraps output
-    if raw_content.startswith("```"):
-        lines = raw_content.split("\n")
-        raw_content = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+    # 1. Strip <think>...</think> blocks (Minimax M2.5)
+    raw_content = re.sub(r'<think>.*?</think>', '', raw_content, flags=re.DOTALL).strip()
 
-    parsed = json.loads(raw_content)
+    # 2. Clean markdown fences if LLM wraps output
+    if "```json" in raw_content:
+        # Extract content between ```json and ```
+        match = re.search(r'```json\s*(.*?)\s*```', raw_content, re.DOTALL)
+        if match:
+            raw_content = match.group(1).strip()
+    elif "```" in raw_content:
+        match = re.search(r'```\s*(.*?)\s*```', raw_content, re.DOTALL)
+        if match:
+            raw_content = match.group(1).strip()
+
+    try:
+        parsed = json.loads(raw_content)
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse JSON string string: %s", raw_content)
+        raise e
+        
     return ReceiptData(**parsed)
