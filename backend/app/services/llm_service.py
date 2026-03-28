@@ -1,11 +1,9 @@
-"""LLM Service — calls OpenRouter API with Claude 3.5 Sonnet for receipt OCR."""
+"""LLM Service — calls MiniMax API for receipt OCR."""
 
 import base64
 import json
 import logging
 import httpx
-import io
-from PIL import Image
 
 from app.config import get_settings
 from app.models import ReceiptData
@@ -36,40 +34,15 @@ Rules:
 
 
 async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jpeg") -> ReceiptData:
-    """Send receipt image to OpenRouter (Claude 3.5 Sonnet) and return structured data."""
+    """Send standardized receipt image to MiniMax and return structured data."""
     settings = get_settings()
 
-    # Process image with Pillow to compress and resize
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-        
-        # Convert to RGB to handle RGBA/transparent PNGs and standardize format
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-            
-        # Resize if dimensions are too large (1600px max)
-        max_size = 1600
-        if img.width > max_size or img.height > max_size:
-            img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
-            
-        # Save as compressed JPEG
-        buffer = io.BytesIO()
-        img.save(buffer, format="JPEG", quality=85)
-        processed_bytes = buffer.getvalue()
-        logger.info("Image processed and compressed from %d to %d bytes", len(image_bytes), len(processed_bytes))
-        
-        # We enforce JPEG after processing
-        media_type = "image/jpeg"
-    except Exception as e:
-        logger.warning("Pillow image processing failed: %s. Falling back to original bytes.", str(e))
-        processed_bytes = image_bytes
-        media_type = content_type if content_type in ("image/jpeg", "image/png", "image/webp", "image/gif") else "image/jpeg"
-
-    # Encode image to base64
-    b64_image = base64.b64encode(processed_bytes).decode("utf-8")
+    # image_bytes is already standardized as high-quality JPEG by main.py
+    b64_image = base64.b64encode(image_bytes).decode("utf-8")
+    media_type = content_type
 
     payload = {
-        "model": settings.OPENROUTER_MODEL,
+        "model": settings.MINIMAX_MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
@@ -93,15 +66,13 @@ async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jp
     }
 
     headers = {
-        "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {settings.MINIMAX_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://receipt-helper.app",
-        "X-Title": "Receipt Helper",
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
-            "https://openrouter.ai/api/v1/chat/completions",
+            "https://api.minimax.io/v1/chat/completions",
             json=payload,
             headers=headers,
         )

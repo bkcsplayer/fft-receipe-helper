@@ -7,9 +7,9 @@ from functools import lru_cache
 class Settings(BaseSettings):
     """All configuration is injected via .env — never hardcode secrets."""
 
-    # OpenRouter
-    OPENROUTER_API_KEY: str
-    OPENROUTER_MODEL: str = "anthropic/claude-3.5-sonnet"
+    # MiniMax API
+    MINIMAX_API_KEY: str
+    MINIMAX_MODEL: str = "MiniMax-M2.5"
 
     # Google OAuth User Credentials
     GOOGLE_OAUTH_TOKEN_JSON: str = "token.json"

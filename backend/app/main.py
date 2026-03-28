@@ -15,7 +15,27 @@ from app.services.sheets_service import append_receipt_rows, get_month_data
 from app.auth import verify_credentials
 from datetime import datetime
 from typing import List, Dict
+import io
+from PIL import Image
 
+def standardize_image_for_upload(image_bytes: bytes) -> bytes:
+    """Read image bytes, convert to RGB, resize (max 2000px), and return high quality JPEG bytes."""
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        max_size = 2000
+        if img.width > max_size or img.height > max_size:
+            img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+            
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=90)
+        return buffer.getvalue()
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.warning("Image standardization failed: %s. Falling back to original.", str(e))
+        return image_bytes
 # ── Logging ──────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -116,16 +136,20 @@ async def parse_receipt(
     if len(image_bytes) == 0:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
+    # Standardize image to JPEG with optimized size before sending to LLM and Drive
+    standardized_bytes = standardize_image_for_upload(image_bytes)
+
     # Acquire lock — only one receipt processed at a time
     async with processing_lock:
         try:
             # Step 1: LLM OCR
-            logger.info("Parsing receipt (%s, %d bytes) ...", file.filename, len(image_bytes))
-            receipt_data = await extract_receipt_data(image_bytes, file.content_type)
+            logger.info("Parsing receipt (%s, %d bytes -> %d bytes) ...", file.filename, len(image_bytes), len(standardized_bytes))
+            # Pass optimized bytes to LLM, enforcing image/jpeg
+            receipt_data = await extract_receipt_data(standardized_bytes, "image/jpeg")
             logger.info("Extracted: %s — %d items", receipt_data.store_name, len(receipt_data.items))
 
-            # Step 2: Upload to Google Drive
-            drive_link = upload_receipt_image(image_bytes, receipt_data.date)
+            # Step 2: Upload to Google Drive (using optimized JPEG directly)
+            drive_link = upload_receipt_image(standardized_bytes, receipt_data.date)
 
             return ProcessResponse(
                 success=True,
