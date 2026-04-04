@@ -65,7 +65,6 @@ async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jp
         ],
         "max_tokens": 2000,
         "temperature": 0.1,
-        "response_format": {"type": "json_object"}
     }
 
     headers = {
