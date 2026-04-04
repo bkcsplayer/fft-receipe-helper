@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # MiniMax API
     OPENROUTER_API_KEY: str
-    OPENROUTER_MODEL: str = "anthropic/claude-3.5-sonnet"
+    OPENROUTER_MODEL: str = "anthropic/claude-3.7-sonnet"
     
     # Telegram Integration
     TELEGRAM_BOT_TOKEN: str = ""
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # Server
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache()

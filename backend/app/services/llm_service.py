@@ -65,6 +65,7 @@ async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jp
         ],
         "max_tokens": 2000,
         "temperature": 0.1,
+        "response_format": {"type": "json_object"}
     }
 
     headers = {
@@ -87,9 +88,16 @@ async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jp
     logger.info("LLM raw response via OpenRouter: %s", raw_content)
 
     # Clean markdown fences if LLM wraps output
-    if raw_content.startswith("```"):
-        lines = raw_content.split("\n")
-        raw_content = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+    import re
+    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw_content, re.DOTALL)
+    if match:
+        raw_content = match.group(1)
+    else:
+        # try to find first { and last }
+        start = raw_content.find('{')
+        end = raw_content.rfind('}')
+        if start != -1 and end != -1:
+            raw_content = raw_content[start:end+1]
 
     parsed = json.loads(raw_content)
     return ReceiptData(**parsed)
