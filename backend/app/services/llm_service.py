@@ -63,9 +63,6 @@ async def extract_receipt_data(image_bytes: bytes, content_type: str = "image/jp
                 ],
             },
         ],
-        "provider": {
-            "order": ["Anthropic"]
-        },
         "max_tokens": 2000,
         "temperature": 0.1,
     }

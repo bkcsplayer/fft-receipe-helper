@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # MiniMax API
     OPENROUTER_API_KEY: str
-    OPENROUTER_MODEL: str = "anthropic/claude-3.7-sonnet"
+    OPENROUTER_MODEL: str = "google/gemini-2.0-flash-001"
     
     # Telegram Integration
     TELEGRAM_BOT_TOKEN: str = ""
