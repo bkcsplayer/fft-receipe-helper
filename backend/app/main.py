@@ -114,7 +114,15 @@ async def get_history(
             return data
             
         # Filter by username so users only see their own data
-        filtered_data = [row for row in data if row.get("上传者") == username]
+        # For 'admin' (or legacy data), if '上传者' is missing, assume it belongs to admin
+        filtered_data = []
+        for row in data:
+            uploader = row.get("上传者")
+            if uploader == username:
+                filtered_data.append(row)
+            elif not uploader and username == "admin":
+                filtered_data.append(row)
+                
         return filtered_data
         
     except Exception as e:
